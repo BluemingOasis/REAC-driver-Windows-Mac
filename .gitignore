@@ -1,0 +1,22 @@
+# Build outputs
+build/
+out/
+*.exe
+*.dll
+*.pdb
+*.obj
+*.lib
+*.exp
+*.ilk
+
+# Local/runtime output
+*.log
+
+# Vendored/reference clone
+upstream/
+
+# Editor/OS files
+.vs/
+.vscode/
+.DS_Store
+Thumbs.db
