@@ -11,8 +11,10 @@ class ReacRingBuffer {
 public:
     explicit ReacRingBuffer(size_t capacity_frames = 48000 * 4);
 
+    void clear();
     void push(const reac::DecodedMultichannelPacket& packet);
     void read(float** output_channels, int channel_count, size_t frame_count);
+    void read_interleaved(float* output, int channel_count, size_t frame_count);
     size_t available() const;
 
 private:
