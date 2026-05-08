@@ -1,13 +1,14 @@
 # REAC Decoder Example
 
-Small Windows-first REAC audio proof of concept.
+Small REAC audio proof of concept for Windows and macOS.
 
 This example expects raw Ethernet frames whose EtherType is `0x8819`. It decodes
 Roland REAC 48 kHz, 40-channel, 24-bit packets into stereo float audio and plays
 the chosen channel pair with the Windows `waveOut` API.
 
 `reac_play` can listen directly through Npcap, or read packets from stdin for
-debugging/replay.
+debugging/replay. On macOS, the Core Audio HAL driver exposes the stream as a
+40-channel device named `REAC 40ch`.
 
 ## Prerequisite
 
@@ -156,6 +157,43 @@ Unregister:
 
 This is a first ASIO prototype, not yet a production driver. The console player
 is still the quickest way to verify packet decode and channel mapping.
+
+## macOS Core Audio Driver
+
+The macOS path builds a Core Audio HAL driver:
+
+```text
+REAC 40ch
+40 inputs
+2 outputs
+48 kHz
+```
+
+Quick start on macOS:
+
+```bash
+./scripts/build_macos_probe.sh
+sudo ./build/reac_macos_probe --device en7 --seconds 10
+
+./scripts/create_macos_local_codesign_identity.sh
+./scripts/build_macos_audio_driver.sh
+sudo ./scripts/install_macos_audio_driver.sh --system
+sudo ./scripts/set_macos_reac_interface.sh en7
+sudo ./scripts/install_macos_bpf_launchdaemon.sh
+sudo killall coreaudiod
+```
+
+Optional desktop launcher:
+
+```bash
+./scripts/install_macos_desktop_launcher.sh
+```
+
+Then open `REAC Control.command` from the Desktop, choose `Start REAC`, and
+select `REAC 40ch` in your DAW.
+
+See [macos/README.md](macos/README.md) for full setup notes and the current
+development caveats around local signing and BPF access.
 
 ## Protocol Notes
 

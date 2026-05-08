@@ -7,6 +7,14 @@ ReacRingBuffer::ReacRingBuffer(size_t capacity_frames)
 {
 }
 
+void ReacRingBuffer::clear()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    write_index_ = 0;
+    read_index_ = 0;
+    available_ = 0;
+}
+
 void ReacRingBuffer::push(const reac::DecodedMultichannelPacket& packet)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -37,6 +45,23 @@ void ReacRingBuffer::read(float** output_channels, int channel_count, size_t fra
 
         for (int channel = 0; channel < channel_count; ++channel) {
             output_channels[channel][frame] = frames_[read_index_][channel];
+        }
+        read_index_ = (read_index_ + 1) % frames_.size();
+        --available_;
+    }
+}
+
+void ReacRingBuffer::read_interleaved(float* output, int channel_count, size_t frame_count)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (size_t frame = 0; frame < frame_count; ++frame) {
+        if (available_ == 0) {
+            std::fill_n(output + (frame * channel_count), channel_count, 0.0f);
+            continue;
+        }
+
+        for (int channel = 0; channel < channel_count; ++channel) {
+            output[(frame * channel_count) + channel] = frames_[read_index_][channel];
         }
         read_index_ = (read_index_ + 1) % frames_.size();
         --available_;

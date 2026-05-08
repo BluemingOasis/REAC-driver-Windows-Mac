@@ -1,54 +1,51 @@
-# REAC Core Audio Driver Scaffold
+# REAC Core Audio HAL Driver
 
-The macOS end goal is a Core Audio `AudioServerPlugIn` that exposes:
+`ReacAudioServerPlugin.driver` is a Core Audio `AudioServerPlugIn` bundle for
+macOS. It publishes a virtual device named `REAC 40ch`.
 
-- 40 input channels from the REAC packet stream
-- 2 monitor output channels routed to a selected Core Audio output device
-- 48 kHz sample rate
+Current behavior:
 
-This folder is a scaffold and design note for the Mac-side driver. The first
-thing to run on the Mac is the C++ probe target from the repo root:
+- 40-channel interleaved input stream
+- 2-channel output stream for DAW compatibility
+- 48 kHz fixed sample rate
+- live `pcap` capture on the configured REAC Ethernet interface
+- REAC packet decode through the shared `reac::Decoder`
+- zero-filled input on underrun or when capture is unavailable
 
-```bash
-cmake -S . -B build
-cmake --build build --target reac_macos_probe
-sudo ./build/reac_macos_probe --list-devices
-sudo ./build/reac_macos_probe --device en0 --seconds 10
-```
+The driver reads the capture interface from:
 
-The probe must decode roughly 4000 packets per second before the Core Audio
-plugin work is worth debugging.
+1. system preference `/Library/Preferences/com.reac.decoder.plist`
+2. user/default app preference `com.reac.decoder`
+3. environment variable `REAC_CAPTURE_INTERFACE`
+4. fallback `en7`
 
-## Settings
-
-The SwiftUI settings app writes:
-
-```text
-suite: com.reac.decoder
-captureInterface = en0
-monitorOutputDeviceID = <CoreAudio AudioDeviceID>
-```
-
-The AudioServerPlugIn should read the same preferences.
-
-## Plugin Work Remaining On Mac
-
-1. Create an Xcode bundle target with bundle type `com.apple.audio-server-plugin`.
-2. Implement the Core Audio plugin COM interface.
-3. Feed the existing `reac::Decoder` and `ReacRingBuffer` from a `pcap` capture thread.
-4. Expose stream/channel layout as 40 mono inputs and 2 outputs.
-5. Install to one of:
-
-```text
-~/Library/Audio/Plug-Ins/HAL/ReacAudioServerPlugin.driver
-/Library/Audio/Plug-Ins/HAL/ReacAudioServerPlugin.driver
-```
-
-6. Restart Core Audio:
+Set the system preference with:
 
 ```bash
+sudo ./scripts/set_macos_reac_interface.sh en7
+```
+
+Build and install from the repo root:
+
+```bash
+./scripts/build_macos_audio_driver.sh
+sudo ./scripts/install_macos_audio_driver.sh --system
 sudo killall coreaudiod
 ```
 
-This has to be compiled and debugged on macOS because the Core Audio HAL plugin
-ABI and installation behavior are not testable from Windows.
+Watch runtime logs:
+
+```bash
+log stream --style compact --predicate 'eventMessage CONTAINS[c] "REAC capture" OR eventMessage CONTAINS[c] "ReacAudioServerPlugin"'
+```
+
+Known development caveat: packet capture from inside the HAL driver requires BPF
+permissions for `_coreaudiod`. Use:
+
+```bash
+sudo ./scripts/install_macos_bpf_launchdaemon.sh
+```
+
+For a production-grade distribution, replace the BPF permission workaround with
+a privileged capture helper or a system extension that streams decoded audio to
+the HAL driver through shared memory or IPC.
