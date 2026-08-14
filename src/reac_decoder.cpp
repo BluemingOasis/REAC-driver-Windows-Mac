@@ -60,9 +60,9 @@ DecodeStatus Decoder::validate_packet(const uint8_t* packet, size_t packet_size)
         return DecodeStatus::wrong_ethertype;
     }
 
-    if (packet[packet_size - 2] != 0xC2 || packet[packet_size - 1] != 0xEA) {
-        return DecodeStatus::bad_trailer;
-    }
+//    if (packet[packet_size - 2] != 0xC2 || packet[packet_size - 1] != 0xEA) {
+//        return DecodeStatus::bad_trailer;
+//    }
 
     return DecodeStatus::ok;
 }
