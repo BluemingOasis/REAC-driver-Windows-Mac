@@ -13,7 +13,7 @@ constexpr int kEtherHeaderBytes = 14;
 constexpr int kPayloadOffset = kEtherHeaderBytes + 2 + 2 + 32;
 constexpr int kBytesPerSample = 3;
 constexpr int kFramePayloadBytes = kSamplesPerPacket * kChannelCount * kBytesPerSample;
-constexpr int kMinimumPacketBytes = kPayloadOffset + kFramePayloadBytes + 2;
+constexpr int kMinimumPacketBytes = kPayloadOffset + kFramePayloadBytes;
 
 struct DecodedPacket {
     std::array<float, kSamplesPerPacket> left{};
