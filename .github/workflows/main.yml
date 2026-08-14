@@ -11,18 +11,17 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Download Npcap SDK
+      - name: Build with g++ (MSYS2)
         run: |
-          Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-sdk-1.13.zip" -OutFile "npcap-sdk.zip"
-          Expand-Archive npcap-sdk.zip -DestinationPath npcap-sdk
-
-      - name: Build with CMake
-        run: |
-          cmake -S . -B build -DPCAP_DIR="$env:GITHUB_WORKSPACE\npcap-sdk"
-          cmake --build build --config Release
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc src/main.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/waveout_player.cpp -lwinmm -o reac_play.exe
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -mwindows -Isrc src/config_app.cpp src/pcap_capture.cpp src/reac_settings.cpp src/waveout_player.cpp -ladvapi32 -lwinmm -o reac_config.exe
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc -shared src/reac_asio_driver.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/reac_ring_buffer.cpp -lole32 -ladvapi32 -luuid -o reac_asio.dll
 
       - name: Upload Binaries
         uses: actions/upload-artifact@v4
         with:
           name: REAC_Windows_Binaries
-          path: build/Release/
+          path: |
+            reac_play.exe
+            reac_config.exe
+            reac_asio.dll
