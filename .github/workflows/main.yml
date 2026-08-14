@@ -1,27 +1,76 @@
-name: Build REAC Windows
+name: Build REAC Driver
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
 jobs:
-  build:
+  # Windows 빌드 (CMake 및 MinGW/g++ 활용)
+  build-windows:
+    name: Build on Windows
     runs-on: windows-latest
-
+    
     steps:
-      - name: Checkout Source Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build with g++ (MSYS2)
+      # README에 명시된 CMake 빌드
+      - name: Build with CMake
         run: |
-          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc src/main.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/waveout_player.cpp -static -lwinmm -o reac_play.exe
-          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -mwindows -Isrc src/config_app.cpp src/pcap_capture.cpp src/reac_settings.cpp src/waveout_player.cpp -static -ladvapi32 -lwinmm -o reac_config.exe
-          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc -shared src/reac_asio_driver.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/reac_ring_buffer.cpp src/waveout_player.cpp src/reac_settings.cpp -static -lole32 -ladvapi32 -luuid -lwinmm -o reac_asio.dll
+          cmake -S . -B build
+          cmake --build build --config Release
 
-      - name: Upload Binaries
+      # README에 명시된 MinGW/g++ 컴포넌트 개별 빌드 (Player, GUI, ASIO)
+      - name: Build Components with g++
+        run: |
+          # 1. Player 빌드
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc src\main.cpp src\pcap_capture.cpp src\reac_decoder.cpp src\waveout_player.cpp -lwinmm -o reac_play.exe
+          
+          # 2. Settings GUI 빌드
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -mwindows -Isrc src\config_app.cpp src\pcap_capture.cpp src\reac_settings.cpp src\waveout_player.cpp -ladvapi32 -lwinmm -o reac_config.exe
+          
+          # 3. Reaper ASIO Driver 프로토타입 빌드
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc -shared src\reac_asio_driver.cpp src\pcap_capture.cpp src\reac_decoder.cpp src\reac_ring_buffer.cpp -lole32 -ladvapi32 -luuid -o reac_asio.dll
+
+      - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: REAC_Windows_Binaries
+          name: reac-driver-windows
           path: |
             reac_play.exe
             reac_config.exe
             reac_asio.dll
+            build/Release/
+
+  # macOS 빌드 (리포지토리 내부 쉘 스크립트 활용)
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Grant execute permissions for scripts
+        run: chmod +x scripts/*.sh
+
+      # 1. macOS Probe 빌드
+      - name: Build macOS Probe
+        run: ./scripts/build_macos_probe.sh
+
+      # 2. 로컬 코드 사이닝 인증서 생성 (CI 환경 특성상 키체인 접근 에러 방지를 위해 continue-on-error 적용)
+      - name: Create Local Codesign Identity
+        continue-on-error: true
+        run: ./scripts/create_macos_local_codesign_identity.sh
+
+      # 3. macOS Core Audio Driver 빌드
+      - name: Build macOS Audio Driver
+        run: ./scripts/build_macos_audio_driver.sh
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: reac-driver-macos
+          path: build/
