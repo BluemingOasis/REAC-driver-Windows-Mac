@@ -11,9 +11,14 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Download Npcap SDK
+        run: |
+          Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-sdk-1.13.zip" -OutFile "npcap-sdk.zip"
+          Expand-Archive npcap-sdk.zip -DestinationPath npcap-sdk
+
       - name: Build with CMake
         run: |
-          cmake -S . -B build
+          cmake -S . -B build -DPCAP_DIR="$env:GITHUB_WORKSPACE\npcap-sdk"
           cmake --build build --config Release
 
       - name: Upload Binaries
