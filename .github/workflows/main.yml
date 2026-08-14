@@ -13,9 +13,9 @@ jobs:
 
       - name: Build with g++ (MSYS2)
         run: |
-          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc src/main.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/waveout_player.cpp -lwinmm -o reac_play.exe
-          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -mwindows -Isrc src/config_app.cpp src/pcap_capture.cpp src/reac_settings.cpp src/waveout_player.cpp -ladvapi32 -lwinmm -o reac_config.exe
-          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc -shared src/reac_asio_driver.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/reac_ring_buffer.cpp src/waveout_player.cpp src/reac_settings.cpp -lole32 -ladvapi32 -luuid -lwinmm -o reac_asio.dll
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc src/main.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/waveout_player.cpp -static -lwinmm -o reac_play.exe
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -mwindows -Isrc src/config_app.cpp src/pcap_capture.cpp src/reac_settings.cpp src/waveout_player.cpp -static -ladvapi32 -lwinmm -o reac_config.exe
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc -shared src/reac_asio_driver.cpp src/pcap_capture.cpp src/reac_decoder.cpp src/reac_ring_buffer.cpp src/waveout_player.cpp src/reac_settings.cpp -static -lole32 -ladvapi32 -luuid -lwinmm -o reac_asio.dll
 
       - name: Upload Binaries
         uses: actions/upload-artifact@v4
