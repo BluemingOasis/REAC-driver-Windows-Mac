@@ -1,0 +1,23 @@
+name: Build REAC Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Build with CMake
+        run: |
+          cmake -S . -B build
+          cmake --build build --config Release
+
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: REAC_Windows_Binaries
+          path: build/Release/
