@@ -7,7 +7,7 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  # Windows 빌드 (MSVC 대신 MinGW/g++ 직접 사용)
+# Windows 빌드 (필요한 DLL 파일들을 함께 패키징하도록 수정)
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
@@ -16,27 +16,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # MSVC CMake 빌드에서 발생하는 C2375 에러를 피하기 위해 g++로 직접 빌드합니다.
       - name: Build Components with g++
         run: |
           # 1. Player 빌드
           g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc src\main.cpp src\pcap_capture.cpp src\reac_decoder.cpp src\waveout_player.cpp -lwinmm -o reac_play.exe
           
           # 2. Settings GUI 빌드
-          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -mwindows -Isrc src\config_app.cpp src\pcap_capture.cpp src\reac_settings.cpp src\waveout_player.cpp -ladvapi32 -lwinmm -o reac_config.exe          
-         
+          g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -mwindows -Isrc src\config_app.cpp src\pcap_capture.cpp src\reac_settings.cpp src\waveout_player.cpp -ladvapi32 -lwinmm -o reac_config.exe
+          
           # 3. Reaper ASIO Driver 프로토타입 빌드
           g++ -std=c++17 -DNOMINMAX -DWIN32_LEAN_AND_MEAN -Isrc -shared src\reac_asio_driver.cpp src\pcap_capture.cpp src\reac_decoder.cpp src\reac_ring_buffer.cpp src\waveout_player.cpp src\reac_settings.cpp -lole32 -ladvapi32 -luuid -lwinmm -o reac_asio.dll
-          
+
+          # 4. 실행에 필요한 MinGW 시스템 DLL 파일들을 현재 폴더로 자동 복사
+          cp C:/mingw64/bin/libwinpthread-1.dll .
+          cp C:/mingw64/bin/libstdc++-6.dll .
+          cp C:/mingw64/bin/libgcc_s_seh-1.dll .
+
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: reac-driver-windows
-          # CMake build 폴더를 사용하지 않으므로, 루트에 생성된 파일만 업로드합니다.
           path: |
             reac_play.exe
             reac_config.exe
             reac_asio.dll
+            libwinpthread-1.dll
+            libstdc++-6.dll
+            libgcc_s_seh-1.dll
 
   # macOS 빌드 (리포지토리 내부 쉘 스크립트 활용)
   build-macos:
