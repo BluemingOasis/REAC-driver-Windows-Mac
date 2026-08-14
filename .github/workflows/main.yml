@@ -7,7 +7,7 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  # Windows 빌드 (CMake 및 MinGW/g++ 활용)
+  # Windows 빌드 (MSVC 대신 MinGW/g++ 직접 사용)
   build-windows:
     name: Build on Windows
     runs-on: windows-latest
@@ -16,13 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # README에 명시된 CMake 빌드
-      - name: Build with CMake
-        run: |
-          cmake -S . -B build
-          cmake --build build --config Release
-
-      # README에 명시된 MinGW/g++ 컴포넌트 개별 빌드 (Player, GUI, ASIO)
+      # MSVC CMake 빌드에서 발생하는 C2375 에러를 피하기 위해 g++로 직접 빌드합니다.
       - name: Build Components with g++
         run: |
           # 1. Player 빌드
@@ -38,11 +32,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: reac-driver-windows
+          # CMake build 폴더를 사용하지 않으므로, 루트에 생성된 파일만 업로드합니다.
           path: |
             reac_play.exe
             reac_config.exe
             reac_asio.dll
-            build/Release/
 
   # macOS 빌드 (리포지토리 내부 쉘 스크립트 활용)
   build-macos:
