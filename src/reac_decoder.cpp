@@ -52,9 +52,9 @@ DecodeStatus Decoder::decode_all(const uint8_t* packet,
 
 DecodeStatus Decoder::validate_packet(const uint8_t* packet, size_t packet_size)
 {
-    if (packet_size < kMinimumPacketBytes) {
-        return DecodeStatus::too_short;
-    }
+//    if (packet_size < kMinimumPacketBytes) {
+//        return DecodeStatus::too_short;
+//    }
 
     if (packet[12] != 0x88 || packet[13] != 0x19) {
         return DecodeStatus::wrong_ethertype;
